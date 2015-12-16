@@ -1,0 +1,5 @@
+#!/bin/sh
+
+export SESSION_RETHINKDBSTORE_ADDRESS="localhost"
+export SESSION_RETHINKDBSTORE_DB="test"
+export SESSION_RETHINKDBSTORE_TABLE="test"

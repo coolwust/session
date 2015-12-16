@@ -3,10 +3,9 @@ package session
 import (
 	"sync"
 	"time"
-	"errors"
 )
 
-var ErrSessionNotFound = errors.New("Session is not found in storage")
+var _ Store = new(MemoryStore)
 
 type MemoryStore struct {
 	data map[string]*Session
@@ -31,7 +30,7 @@ func (store *MemoryStore) Get(id string) (*Session, error) {
 	defer store.mu.RUnlock()
 	session, ok := store.data[id]
 	if !ok {
-		return nil, ErrSessionNotFound
+		return nil, ErrNotFound
 	}
 	return session, nil
 }

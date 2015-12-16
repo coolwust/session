@@ -6,22 +6,23 @@ import (
 	"crypto/rand"
 	"fmt"
 	"net/http"
+	"golang.org/x/net/context"
 )
 
 type Session struct {
 	ID       string
 	Expires  time.Time
 	Duration time.Duration
-	data     map[string]interface{}
+	Data     map[string]interface{}
 	mu       sync.RWMutex
 }
 
 func NewSession(genID func() string, duration time.Duration) *Session {
 	session := &Session{
 		ID:       genID(),
-		Expires:  time.Now().Add(duration),
+		Expires:  time.Unix(time.Now().Unix(), 0).Add(duration),
 		Duration: duration,
-		data:     make(map[string]interface{}),
+		Data:     make(map[string]interface{}),
 	}
 	return session
 }
@@ -29,13 +30,13 @@ func NewSession(genID func() string, duration time.Duration) *Session {
 func (session *Session) Set(name string, value interface{}) {
 	session.mu.Lock()
 	defer session.mu.Unlock()
-	session.data[name] = value
+	session.Data[name] = value
 }
 
 func (session *Session) Get(name string) interface{} {
 	session.mu.RLock()
 	defer session.mu.RUnlock()
-	return session.data[name]
+	return session.Data[name]
 }
 
 func (session *Session) Touch() {
@@ -66,6 +67,19 @@ func ToResponse(w http.ResponseWriter, sid, name, path string, maxAge int, key s
 		//cookie.HttpOnly = true
 	}
 	w.Header().Set("Set-Cookie", cookie.String())
+}
+
+type key int
+
+const sessionKey key = iota
+
+func NewContext(ctx context.Context, session *Session) context.Context {
+	return context.WithValue(ctx, sessionKey, session)
+}
+
+func FromContext(ctx context.Context) (*Session, bool) {
+	session, ok := ctx.Value(sessionKey).(*Session)
+	return session, ok
 }
 
 func UUID() string {
